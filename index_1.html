@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini JPL Tournament – जोताई</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#0b1d3a;--card:#13294f;--gold:#f5b700;--text:#f2f5fa;--mut:#9fb0cc;--ok:#22c55e;--bad:#ef4444;--line:#2c4777}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Noto Sans Devanagari",sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#0b1d3a,#1d3f7a);padding:18px 16px;text-align:center;border-bottom:3px solid var(--gold)}
+header h1{margin:0;font-size:26px;color:var(--gold)}
+header p{margin:4px 0 0;color:var(--mut);font-size:14px}
+#startBar{margin-top:8px;font-size:16px;color:#fff;font-weight:600}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px;background:#0a1830;position:sticky;top:0;z-index:5}
+nav button{flex:none;white-space:nowrap;background:var(--card);color:var(--text);border:0;padding:10px 14px;border-radius:8px;font-size:15px;cursor:pointer}
+nav button.on{background:var(--gold);color:#000;font-weight:700}
+main{max-width:960px;margin:0 auto;padding:16px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;margin:12px 0 4px;font-size:14px;color:var(--mut)}
+input,select,textarea{width:100%;padding:11px;border-radius:8px;border:1px solid var(--line);background:#0d2145;color:var(--text);font-size:16px}
+button.pri{background:var(--gold);color:#000;border:0;padding:13px;border-radius:8px;font-size:16px;font-weight:700;width:100%;margin-top:14px;cursor:pointer}
+button.sm{background:var(--line);color:#fff;border:0;padding:6px 10px;border-radius:6px;cursor:pointer;margin:2px}
+button.gg{background:#fff;color:#222;border:0;padding:12px 18px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;width:100%}
+button:disabled{opacity:.5}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--gold)}
+.tw{overflow-x:auto}
+img.th{width:42px;height:42px;object-fit:cover;border-radius:6px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.pc{background:#0d2145;border-radius:12px;padding:12px;text-align:center;cursor:pointer;border:1px solid var(--line)}
+.pc img{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--gold)}
+.pc .ph{width:100px;height:100px;border-radius:50%;background:var(--line);margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:36px}
+.tag{padding:3px 8px;border-radius:12px;font-size:12px;display:inline-block;margin:2px}
+.paid{background:var(--ok);color:#000}.pend{background:var(--bad)}
+.role{background:var(--gold);color:#000}
+.center{text-align:center}
+#qr{display:inline-block;background:#fff;padding:10px;border-radius:8px;margin:8px}
+.msg{padding:10px;border-radius:8px;margin-top:10px;background:#0d2145}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:600px){.row,.row3{grid-template-columns:1fr}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:20;padding:20px}
+.modal.on{display:flex}
+.modal .card{max-width:520px;width:100%;margin:auto}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.stats div{background:#0d2145;border-radius:8px;padding:10px;text-align:center}
+.stats b{display:block;font-size:22px;color:var(--gold)}
+.stats small{color:var(--mut)}
+@media print{header,nav,.noprint{display:none!important}body{background:#fff;color:#000}th,td{color:#000}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏏 Mini JPL Tournament</h1>
+  <p>📍 जोताई, पोरसा, मुरैना (म.प्र.)</p>
+  <div id="startBar"></div>
+</header>
+<nav>
+  <button class="on" data-t="reg">रजिस्ट्रेशन</button>
+  <button data-t="players">खिलाड़ी</button>
+  <button data-t="teams">टीमें</button>
+  <button data-t="sched">शेड्यूल</button>
+  <button data-t="pts">पॉइंट्स</button>
+  <button data-t="coach">कोच</button>
+  <button data-t="admin">एडमिन</button>
+</nav>
+<main>
+
+<!-- REGISTRATION -->
+<section id="reg" class="on">
+  <div class="card" id="regCard">
+    <h2 style="margin-top:0">खिलाड़ी रजिस्ट्रेशन</h2>
+    <form id="regForm">
+      <label>खिलाड़ी का नाम *</label><input id="name" required>
+      <div class="row">
+        <div><label>उम्र *</label><input id="age" type="number" min="5" max="70" required></div>
+        <div><label>मोबाइल नंबर *</label><input id="mobile" type="tel" pattern="[0-9]{10}" maxlength="10" required></div>
+      </div>
+      <div class="row">
+        <div><label>रोल *</label>
+          <select id="role"><option>बल्लेबाज</option><option>गेंदबाज</option><option>ऑलराउंडर</option></select></div>
+        <div><label>टी-शर्ट साइज़ *</label>
+          <select id="tsize"><option>S</option><option>M</option><option selected>L</option><option>XL</option><option>XXL</option></select></div>
+      </div>
+      <label>टीम चुनें (अभी न हो तो खाली छोड़ें)</label><select id="team"></select>
+      <label>पासपोर्ट फोटो *</label><input id="photo" type="file" accept="image/*" required>
+
+      <h3 style="margin-bottom:0">एंट्री फीस: ₹<span id="feeShow"></span></h3>
+      <div class="center">
+        <div id="qr"></div>
+        <div style="color:var(--mut);font-size:14px">UPI ID: <b id="upiShow"></b></div>
+        <a id="upiLink" class="sm" style="color:var(--gold)">📲 UPI ऐप से भुगतान करें</a>
+      </div>
+      <label>पेमेंट का स्क्रीनशॉट *</label><input id="shot" type="file" accept="image/*" required>
+      <button class="pri" id="regBtn">रजिस्टर करें</button>
+    </form>
+    <div id="regMsg"></div>
+  </div>
+
+  <div class="card center" id="doneCard" style="display:none">
+    <h2 style="margin-top:0">✅ रजिस्ट्रेशन हो गया!</h2>
+    <canvas id="cardCanvas" width="600" height="840" style="max-width:100%;border-radius:12px"></canvas>
+    <button class="pri" id="dlCard">⬇️ प्लेयर कार्ड डाउनलोड करें</button>
+    <a id="waBtn" target="_blank"><button class="pri" style="background:#25d366">WhatsApp पर सुधीर को सूचना भेजें</button></a>
+    <p style="color:var(--mut);font-size:13px">पेमेंट वेरिफाई होने के बाद स्टेटस "Paid" हो जाएगा।</p>
+  </div>
+</section>
+
+<!-- PLAYERS (public) -->
+<section id="players">
+  <div class="card">
+    <h2 style="margin-top:0">सभी खिलाड़ी</h2>
+    <div class="row">
+      <div><label>टीम से फ़िल्टर</label><select id="fTeam"></select></div>
+      <div><label>रोल से फ़िल्टर</label>
+        <select id="fRole"><option value="">सभी</option><option>बल्लेबाज</option><option>गेंदबाज</option><option>ऑलराउंडर</option></select></div>
+    </div>
+  </div>
+  <div class="grid" id="pGrid"></div>
+</section>
+
+<!-- TEAMS -->
+<section id="teams">
+  <div class="card">
+    <h2 style="margin-top:0">टीमें</h2>
+    <div class="tw"><table id="teamTbl"></table></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">नई टीम बनाएं</h3>
+    <label>टीम का नाम *</label><input id="tName" placeholder="जैसे: जोताई वारियर्स">
+    <div class="row">
+      <div><label>कप्तान का नाम *</label><input id="tCap"></div>
+      <div><label>कोच</label><select id="tCoach"></select></div>
+    </div>
+    <button class="pri" id="tSave">टीम बनाएं</button>
+    <div id="tMsg"></div>
+  </div>
+</section>
+
+<!-- SCHEDULE -->
+<section id="sched"><div class="card"><h2 style="margin-top:0">मैच शेड्यूल व स्कोर</h2><div class="tw"><table id="matchTbl"></table></div></div></section>
+
+<!-- POINTS -->
+<section id="pts"><div class="card"><h2 style="margin-top:0">पॉइंट्स टेबल</h2><div class="tw"><table id="ptsTbl"></table></div></div></section>
+
+<!-- COACH -->
+<section id="coach">
+  <div class="card"><h2 style="margin-top:0">कोच</h2><div id="coachList"></div></div>
+</section>
+
+<!-- ADMIN -->
+<section id="admin">
+  <div class="card" id="loginCard">
+    <h2 style="margin-top:0">🔒 एडमिन लॉगिन (सुधीर)</h2>
+    <button class="gg" id="gBtn">🔵 Google से लॉगिन करें</button>
+    <div id="loginMsg"></div>
+  </div>
+
+  <div id="adminBox" style="display:none">
+    <div class="card noprint">
+      <button class="sm" id="csvBtn">⬇️ Excel (CSV)</button>
+      <button class="sm" onclick="window.print()">🖨️ PDF / Print</button>
+      <button class="sm" id="logoutBtn">लॉगआउट</button>
+      <div id="adminWho" style="color:var(--mut);font-size:13px;margin-top:6px"></div>
+    </div>
+
+    <div class="card noprint">
+      <h3 style="margin-top:0">टूर्नामेंट की तारीख</h3>
+      <div class="row">
+        <div><label>शुरू होने की तारीख</label><input id="sDate" type="date"></div>
+        <div><label>&nbsp;</label><button class="pri" style="margin-top:0" id="sSave">सेव करें</button></div>
+      </div>
+    </div>
+
+    <div class="card noprint">
+      <h3 style="margin-top:0">ग्राउंड</h3>
+      <div class="row">
+        <div><label>ग्राउंड का नाम</label><input id="gName"></div>
+        <div><label>पता</label><input id="gAddr" placeholder="जोताई, पोरसा"></div>
+      </div>
+      <button class="sm" id="gAdd">ग्राउंड जोड़ें</button>
+      <div id="gList"></div>
+    </div>
+
+    <div class="card noprint">
+      <h3 style="margin-top:0">कोच</h3>
+      <div class="row">
+        <div><label>नाम</label><input id="cName"></div>
+        <div><label>मोबाइल</label><input id="cPhone"></div>
+      </div>
+      <button class="sm" id="cAdd">कोच जोड़ें</button>
+      <button class="sm" id="cSubodh">सुबोध को कोच जोड़ें</button>
+      <div id="cList"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">रजिस्टर्ड खिलाड़ी (<span id="cnt">0</span>) | कुल पेड: <span id="paidCnt">0</span></h3>
+      <div class="tw"><table id="plTbl"></table></div>
+    </div>
+
+    <div class="card noprint">
+      <h3 style="margin-top:0">खिलाड़ी का स्टैट्स / टीम / रोल अपडेट</h3>
+      <label>खिलाड़ी चुनें</label><select id="sPlayer"></select>
+      <div class="row">
+        <div><label>रोल</label><select id="sRole"><option>बल्लेबाज</option><option>गेंदबाज</option><option>ऑलराउंडर</option></select></div>
+        <div><label>टीम</label><select id="sTeam"></select></div>
+      </div>
+      <div class="row3">
+        <div><label>मैच</label><input id="sMatches" type="number" min="0"></div>
+        <div><label>रन</label><input id="sRuns" type="number" min="0"></div>
+        <div><label>गेंदें (बल्लेबाजी)</label><input id="sBalls" type="number" min="0"></div>
+      </div>
+      <div class="row3">
+        <div><label>विकेट</label><input id="sWkts" type="number" min="0"></div>
+        <div><label>ओवर (गेंदबाजी)</label><input id="sOvers" type="number" min="0" step="0.1"></div>
+        <div><label>दिए गए रन</label><input id="sRunsGiven" type="number" min="0"></div>
+      </div>
+      <button class="pri" id="sSaveP">स्टैट्स सेव करें</button>
+      <div id="sMsg"></div>
+    </div>
+
+    <div class="card noprint">
+      <h3 style="margin-top:0">मैच जोड़ें</h3>
+      <div class="row">
+        <div><label>टीम A</label><select id="mA"></select></div>
+        <div><label>टीम B</label><select id="mB"></select></div>
+      </div>
+      <div class="row">
+        <div><label>ग्राउंड</label><select id="mG"></select></div>
+        <div><label>तारीख/समय</label><input id="mD" placeholder="25 Dec, 10 AM"></div>
+      </div>
+      <label>स्कोर / रिज़ल्ट</label><input id="mR" placeholder="A जीता 8 रन से">
+      <button class="pri" id="addMatch">मैच सेव करें</button>
+      <div id="adminMatches"></div>
+    </div>
+
+    <div class="card noprint">
+      <h3 style="margin-top:0">पॉइंट्स टेबल में टीम जोड़ें / अपडेट</h3>
+      <div class="row"><div><label>टीम</label><input id="pT"></div><div><label>खेले</label><input id="pP" type="number"></div></div>
+      <div class="row"><div><label>जीते</label><input id="pW" type="number"></div><div><label>हारे</label><input id="pL" type="number"></div></div>
+      <label>पॉइंट्स</label><input id="pPts" type="number">
+      <button class="pri" id="addPts">सेव करें</button>
+      <div id="adminPts"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- Player profile modal -->
+<div class="modal" id="pModal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="card" id="pBody"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA64kO5vHIRwGK0jwGYQhJKPYKGnbTgU9Y",
+  authDomain: "mini-jpl-tournament.firebaseapp.com",
+  projectId: "mini-jpl-tournament",
+  storageBucket: "mini-jpl-tournament.firebasestorage.app",
+  messagingSenderId: "311718972291",
+  appId: "1:311718972291:web:66f5488375d044b2fd04b6"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const gProvider = new GoogleAuthProvider();
+
+/* ====== यहाँ अपनी जानकारी बदलें ====== */
+const ADMIN_EMAILS = ["sudhir@gmail.com"];   // सुधीर का Google ईमेल (लोअर-केस में)
+const UPI_ID = "sudhir@upi";
+const UPI_NAME = "Sudhir - JPL";
+const ENTRY_FEE = 200;
+const SUDHIR_WA = "919999999999";
+const VENUE = "जोताई, पोरसा, मुरैना (म.प्र.)";
+/* ===================================== */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pidOf = id => "JPL-" + id.slice(0, 5).toUpperCase();
+const fmtDate = s => s ? new Date(s + "T00:00:00").toLocaleDateString("hi-IN", { day: "numeric", month: "long", year: "numeric" }) : "";
+
+$("feeShow").textContent = ENTRY_FEE; $("upiShow").textContent = UPI_ID;
+const upiUrl = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${ENTRY_FEE}&cu=INR&tn=JPL%20Entry`;
+$("upiLink").href = upiUrl;
+new QRCode($("qr"), { text: upiUrl, width: 170, height: 170 });
+
+// ---------- caches ----------
+let teams = [], grounds = [], coaches = [], players = [], privateMap = {}, matches = [], settings = {};
+
+// ---------- tabs ----------
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+  document.querySelectorAll("section").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); $(b.dataset.t).classList.add("on");
+  refreshPublic();
+});
+
+// ---------- loading ----------
+async function loadSettings() {
+  const s = await getDoc(doc(db, "settings", "main"));
+  settings = s.exists() ? s.data() : {};
+  $("startBar").textContent = settings.startDate ? `🏁 टूर्नामेंट शुरू: ${fmtDate(settings.startDate)}` : "";
+  $("sDate").value = settings.startDate || "";
+}
+async function loadCollection(name, order) {
+  const q = order ? query(collection(db, name), orderBy(order, "desc")) : collection(db, name);
+  return (await getDocs(q)).docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function loadAll() {
+  [teams, grounds, coaches, matches] = await Promise.all([
+    loadCollection("teams", "createdAt"), loadCollection("grounds"), loadCollection("coaches"), loadCollection("matches", "createdAt")
+  ]);
+  players = await loadCollection("players", "createdAt");
+  await loadSettings();
+  fillSelects();
+}
+function fillSelects() {
+  const teamOpts = teams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+  $("team").innerHTML = `<option value="">बाद में चुनूंगा</option>` + teamOpts;
+  $("fTeam").innerHTML = `<option value="">सभी टीमें</option>` + teamOpts;
+  $("sTeam").innerHTML = `<option value="">कोई टीम नहीं</option>` + teamOpts;
+  $("tCoach").innerHTML = `<option value="">कोच चुनें</option>` + coaches.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+  const teamNameOpts = teams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+  $("mA").innerHTML = teamNameOpts; $("mB").innerHTML = teamNameOpts;
+  $("mG").innerHTML = `<option value="">ग्राउंड चुनें</option>` + grounds.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join("");
+  $("sPlayer").innerHTML = players.map(p => `<option value="${p.id}">${esc(p.name)} (${pidOf(p.id)})</option>`).join("");
+}
+async function refreshPublic() {
+  await loadAll();
+  renderPlayers(); renderTeams(); renderMatches(); renderPoints(); renderCoaches();
+}
+
+// ---------- registration ----------
+async function compress(file, max, q) {
+  return new Promise((res, rej) => {
+    const img = new Image(), r = new FileReader();
+    r.onload = () => { img.src = r.result; };
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = img.width * s; c.height = img.height * s;
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      res(c.toDataURL("image/jpeg", q));
+    };
+    img.onerror = rej; r.onerror = rej; r.readAsDataURL(file);
+  });
+}
+$("regForm").onsubmit = async e => {
+  e.preventDefault();
+  const btn = $("regBtn"); btn.disabled = true; btn.textContent = "सबमिट हो रहा है...";
+  try {
+    const photo = await compress($("photo").files[0], 400, 0.8);
+    const shot = await compress($("shot").files[0], 900, 0.6);
+    const teamId = $("team").value, team = teams.find(t => t.id === teamId);
+    const pub = {
+      name: $("name").value.trim(), age: +$("age").value, role: $("role").value,
+      teamId: teamId || "", teamName: team ? team.name : "", photo,
+      matches: 0, runs: 0, balls: 0, wkts: 0, overs: 0, runsGiven: 0,
+      createdAt: serverTimestamp()
+    };
+    const ref = await addDoc(collection(db, "players"), pub);
+    await setDoc(doc(db, "private_players", ref.id), {
+      mobile: $("mobile").value, tshirt: $("tsize").value, fee: ENTRY_FEE, shot, status: "pending"
+    });
+    pub.pid = pidOf(ref.id); pub.mobile = $("mobile").value; pub.tshirt = $("tsize").value; pub.fee = ENTRY_FEE;
+    await showCard(pub);
+    await refreshPublic();
+  } catch (err) {
+    $("regMsg").innerHTML = `<div class="msg">❌ त्रुटि: ${esc(err.message)}</div>`;
+    btn.disabled = false; btn.textContent = "रजिस्टर करें";
+  }
+};
+function showCard(p) {
+  return new Promise(resolve => {
+    const c = $("cardCanvas"), x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 600, 840);
+    g.addColorStop(0, "#0b1d3a"); g.addColorStop(1, "#1d3f7a");
+    x.fillStyle = g; x.fillRect(0, 0, 600, 840);
+    x.strokeStyle = "#f5b700"; x.lineWidth = 8; x.strokeRect(14, 14, 572, 812);
+    x.fillStyle = "#f5b700"; x.textAlign = "center";
+    x.font = "bold 44px sans-serif"; x.fillText("MINI JPL", 300, 80);
+    x.font = "22px sans-serif"; x.fillStyle = "#fff"; x.fillText("PLAYER CARD", 300, 112);
+    const img = new Image();
+    img.onload = () => {
+      x.save(); x.beginPath(); x.arc(300, 290, 130, 0, Math.PI * 2); x.clip();
+      const s = Math.max(260 / img.width, 260 / img.height);
+      x.drawImage(img, 300 - img.width * s / 2, 290 - img.height * s / 2, img.width * s, img.height * s);
+      x.restore();
+      x.strokeStyle = "#f5b700"; x.lineWidth = 6; x.beginPath(); x.arc(300, 290, 130, 0, Math.PI * 2); x.stroke();
+      x.fillStyle = "#fff"; x.font = "bold 40px sans-serif"; x.fillText(p.name, 300, 480);
+      x.fillStyle = "#f5b700"; x.font = "bold 30px sans-serif"; x.fillText(p.role, 300, 535);
+      x.fillStyle = "#fff"; x.font = "26px sans-serif";
+      x.fillText(`टीम: ${p.teamName || "—"}`, 300, 585);
+      x.fillText(`उम्र: ${p.age}  |  T-Shirt: ${p.tshirt}`, 300, 630);
+      x.fillText(`ID: ${p.pid}`, 300, 675);
+      x.fillStyle = "#9fb0cc"; x.font = "20px sans-serif";
+      x.fillText(VENUE, 300, 780);
+      $("regCard").style.display = "none"; $("doneCard").style.display = "block";
+      $("dlCard").onclick = () => { const a = document.createElement("a"); a.download = p.pid + ".png"; a.href = c.toDataURL("image/png"); a.click(); };
+      const t = encodeURIComponent(`नया JPL रजिस्ट्रेशन\nनाम: ${p.name}\nID: ${p.pid}\nरोल: ${p.role}\nमोबाइल: ${p.mobile}\nफीस: ₹${p.fee} (स्क्रीनशॉट अपलोड किया)`);
+      $("waBtn").href = `https://wa.me/${SUDHIR_WA}?text=${t}`;
+      resolve();
+    };
+    img.src = p.photo;
+  });
+}
+
+// ---------- public: players ----------
+function renderPlayers() {
+  const tf = $("fTeam").value, rf = $("fRole").value;
+  const list = players.filter(p => (!tf || p.teamId === tf) && (!rf || p.role === rf));
+  $("pGrid").innerHTML = list.length ? list.map(p => `
+    <div class="pc" data-open="${p.id}">
+      ${p.photo ? `<img src="${p.photo}" alt="">` : `<div class="ph">🏏</div>`}
+      <div style="font-weight:700;margin-top:8px">${esc(p.name)}</div>
+      <div class="tag role">${esc(p.role)}</div>
+      <div style="color:var(--mut);font-size:13px">${esc(p.teamName || "टीम नहीं")}</div>
+      <div style="font-size:13px">रन: <b>${p.runs || 0}</b> | विकेट: <b>${p.wkts || 0}</b></div>
+    </div>`).join("") : `<div class="card">कोई खिलाड़ी नहीं मिला</div>`;
+  document.querySelectorAll("[data-open]").forEach(el => el.onclick = () => openProfile(el.dataset.open));
+}
+["fTeam", "fRole"].forEach(id => $(id).onchange = renderPlayers);
+
+function openProfile(id) {
+  const p = players.find(x => x.id === id); if (!p) return;
+  const sr = p.balls ? ((p.runs / p.balls) * 100).toFixed(1) : "—";
+  const eco = p.overs ? (p.runsGiven / p.overs).toFixed(2) : "—";
+  $("pBody").innerHTML = `
+    <div class="center">
+      ${p.photo ? `<img src="${p.photo}" style="width:140px;height:140px;border-radius:50%;object-fit:cover;border:4px solid var(--gold)">` : ""}
+      <h2 style="margin:10px 0 4px">${esc(p.name)}</h2>
+      <span class="tag role">${esc(p.role)}</span>
+      <div style="color:var(--mut);margin-top:6px">टीम: ${esc(p.teamName || "टीम नहीं")} | उम्र: ${p.age} | ID: ${pidOf(p.id)}</div>
+    </div>
+    <div class="stats">
+      <div><b>${p.matches || 0}</b><small>मैच</small></div>
+      <div><b>${p.runs || 0}</b><small>रन</small></div>
+      <div><b>${p.balls || 0}</b><small>गेंदें</small></div>
+      <div><b>${sr}</b><small>स्ट्राइक रेट</small></div>
+      <div><b>${p.wkts || 0}</b><small>विकेट</small></div>
+      <div><b>${eco}</b><small>इकॉनमी</small></div>
+    </div>
+    <p style="color:var(--mut);font-size:13px">ओवर: ${p.overs || 0} | दिए गए रन: ${p.runsGiven || 0}</p>
+    <button class="pri" onclick="document.getElementById('pModal').classList.remove('on')">बंद करें</button>`;
+  $("pModal").classList.add("on");
+}
+
+// ---------- public: teams ----------
+function renderTeams() {
+  $("teamTbl").innerHTML = "<tr><th>टीम</th><th>कप्तान</th><th>कोच</th><th>खिलाड़ी</th></tr>" +
+    (teams.length ? teams.map(t => `<tr><td><b>${esc(t.name)}</b></td><td>${esc(t.captain)}</td><td>${esc(t.coach || "—")}</td>
+      <td>${players.filter(p => p.teamId === t.id).length}</td></tr>`).join("") : "<tr><td colspan=4>अभी कोई टीम नहीं</td></tr>");
+}
+$("tSave").onclick = async () => {
+  const name = $("tName").value.trim(), captain = $("tCap").value.trim();
+  if (!name || !captain) { $("tMsg").innerHTML = `<div class="msg">टीम का नाम और कप्तान ज़रूरी है</div>`; return; }
+  await addDoc(collection(db, "teams"), { name, captain, coach: $("tCoach").value, createdAt: serverTimestamp() });
+  ["tName", "tCap"].forEach(i => $(i).value = "");
+  $("tMsg").innerHTML = `<div class="msg">✅ टीम बन गई</div>`;
+  refreshPublic();
+};
+
+// ---------- public: matches & points & coaches ----------
+function renderMatches() {
+  $("matchTbl").innerHTML = "<tr><th>टीम A</th><th>टीम B</th><th>ग्राउंड</th><th>समय</th><th>स्कोर/रिज़ल्ट</th></tr>" +
+    (matches.length ? matches.map(m => `<tr><td>${esc(m.aName)}</td><td>${esc(m.bName)}</td><td>${esc(m.groundName)}</td><td>${esc(m.when)}</td><td>${esc(m.result)}</td></tr>`).join("")
+      : "<tr><td colspan=5>अभी कोई मैच नहीं</td></tr>");
+}
+function renderPoints() {
+  const rows = []; // filled from points collection
+  loadCollection("points").then(pts => {
+    const sorted = pts.sort((a, b) => b.pts - a.pts);
+    $("ptsTbl").innerHTML = "<tr><th>#</th><th>टीम</th><th>खेले</th><th>जीते</th><th>हारे</th><th>पॉइंट्स</th></tr>" +
+      (sorted.length ? sorted.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.l}</td><td><b>${r.pts}</b></td></tr>`).join("")
+        : "<tr><td colspan=6>अभी डेटा नहीं</td></tr>");
+  }).catch(() => { $("ptsTbl").innerHTML = "<tr><td>लोड नहीं हुआ</td></tr>"; });
+}
+function renderCoaches() {
+  $("coachList").innerHTML = coaches.length ? coaches.map(c => {
+    const ts = teams.filter(t => t.coach === c.name).map(t => esc(t.name));
+    return `<div class="msg"><b>${esc(c.name)}</b> <span style="color:var(--mut)">${ts.length ? "· " + ts.join(", ") : ""}</span></div>`;
+  }).join("") : "<div>अभी कोई कोच नहीं</div>";
+}
+
+// ---------- auth ----------
+$("gBtn").onclick = async () => {
+  try { await signInWithPopup(auth, gProvider); }
+  catch (e) { $("loginMsg").innerHTML = `<div class="msg">❌ लॉगिन नहीं हुआ: ${esc(e.message)}</div>`; }
+};
+$("logoutBtn").onclick = () => signOut(auth);
+onAuthStateChanged(auth, async u => {
+  const isAdmin = !!u && ADMIN_EMAILS.includes((u.email || "").toLowerCase());
+  $("loginCard").style.display = isAdmin ? "none" : "block";
+  $("adminBox").style.display = isAdmin ? "block" : "none";
+  if (u && !isAdmin) {
+    $("loginMsg").innerHTML = `<div class="msg">यह Google अकाउंट एडमिन नहीं है। <button class="sm" onclick="signOutNow()">दूसरा अकाउंट</button></div>`;
+    await signOut(auth);
+  }
+  if (isAdmin) { $("adminWho").textContent = `लॉगिन: ${u.email}`; await loadAdmin(); }
+});
+window.signOutNow = () => signOut(auth);
+
+// ---------- admin ----------
+async function loadAdmin() {
+  await refreshPublic();
+  const priv = await loadCollection("private_players");
+  privateMap = Object.fromEntries(priv.map(p => [p.id, p]));
+  renderAdminPlayers();
+  renderAdminLists();
+  $("sPlayer").onchange = fillStatsForm; fillStatsForm();
+}
+function renderAdminPlayers() {
+  $("cnt").textContent = players.length;
+  $("paidCnt").textContent = players.filter(p => privateMap[p.id]?.status === "paid").length;
+  $("plTbl").innerHTML = "<tr><th>फोटो</th><th>नाम</th><th>रोल/टीम</th><th>मोबाइल</th><th>साइज़</th><th>पेमेंट</th><th class=noprint>एक्शन</th></tr>" +
+    players.map(p => {
+      const pr = privateMap[p.id] || {};
+      return `<tr><td>${p.photo ? `<img class="th" src="${p.photo}" data-img="${p.id}|photo">` : ""}</td>
+      <td>${esc(p.name)}<br><small>${pidOf(p.id)} · ${p.age} साल</small></td>
+      <td>${esc(p.role)}<br><small>${esc(p.teamName || "—")}</small></td>
+      <td><a style="color:var(--gold)" href="tel:${esc(pr.mobile)}">${esc(pr.mobile)}</a></td><td>${esc(pr.tshirt)}</td>
+      <td><span class="tag ${pr.status === "paid" ? "paid" : "pend"}">${pr.status === "paid" ? "Paid" : "Pending"}</span></td>
+      <td class="noprint"><button class="sm" data-shot="${p.id}">स्क्रीनशॉट</button>
+      <button class="sm" data-toggle="${p.id}">✔/✖</button>
+      <button class="sm" data-del="${p.id}">🗑</button></td></tr>`;
+    }).join("");
+  document.querySelectorAll("[data-img]").forEach(el => el.onclick = () => {
+    const [id, k] = el.dataset.img.split("|"); const w = window.open(); w.document.write(`<img src="${players.find(x => x.id === id)[k]}" style="max-width:100%">`);
+  });
+  document.querySelectorAll("[data-shot]").forEach(el => el.onclick = () => { const w = window.open(); w.document.write(`<img src="${privateMap[el.dataset.shot]?.shot}" style="max-width:100%">`); });
+  document.querySelectorAll("[data-toggle]").forEach(el => el.onclick = async () => {
+    const id = el.dataset.toggle, cur = privateMap[id]?.status;
+    await updateDoc(doc(db, "private_players", id), { status: cur === "paid" ? "pending" : "paid" });
+    await loadAdmin();
+  });
+  document.querySelectorAll("[data-del]").forEach(el => el.onclick = async () => {
+    if (!confirm("इस खिलाड़ी को हटाएं?")) return;
+    await deleteDoc(doc(db, "players", el.dataset.del));
+    await deleteDoc(doc(db, "private_players", el.dataset.del));
+    await loadAdmin();
+  });
+}
+function fillStatsForm() {
+  const p = players.find(x => x.id === $("sPlayer").value); if (!p) return;
+  $("sRole").value = p.role; $("sTeam").value = p.teamId || "";
+  $("sMatches").value = p.matches || 0; $("sRuns").value = p.runs || 0; $("sBalls").value = p.balls || 0;
+  $("sWkts").value = p.wkts || 0; $("sOvers").value = p.overs || 0; $("sRunsGiven").value = p.runsGiven || 0;
+}
+$("sSaveP").onclick = async () => {
+  const id = $("sPlayer").value, team = teams.find(t => t.id === $("sTeam").value);
+  await updateDoc(doc(db, "players", id), {
+    role: $("sRole").value, teamId: $("sTeam").value, teamName: team ? team.name : "",
+    matches: +$("sMatches").value || 0, runs: +$("sRuns").value || 0, balls: +$("sBalls").value || 0,
+    wkts: +$("sWkts").value || 0, overs: +$("sOvers").value || 0, runsGiven: +$("sRunsGiven").value || 0
+  });
+  $("sMsg").innerHTML = `<div class="msg">✅ सेव हो गया</div>`;
+  await loadAdmin();
+};
+$("sSave").onclick = async () => {
+  await setDoc(doc(db, "settings", "main"), { startDate: $("sDate").value }, { merge: true });
+  await loadSettings();
+};
+$("gAdd").onclick = async () => {
+  if (!$("gName").value.trim()) return;
+  await addDoc(collection(db, "grounds"), { name: $("gName").value.trim(), addr: $("gAddr").value.trim() });
+  $("gName").value = ""; $("gAddr").value = ""; await loadAdmin();
+};
+$("cAdd").onclick = async () => {
+  if (!$("cName").value.trim()) return;
+  await addDoc(collection(db, "coaches"), { name: $("cName").value.trim(), phone: $("cPhone").value.trim() });
+  $("cName").value = ""; $("cPhone").value = ""; await loadAdmin();
+};
+$("cSubodh").onclick = async () => {
+  if (coaches.some(c => c.name === "सुबोध")) return;
+  await addDoc(collection(db, "coaches"), { name: "सुबोध", phone: "" });
+  await loadAdmin();
+};
+$("addMatch").onclick = async () => {
+  const a = teams.find(t => t.id === $("mA").value), b = teams.find(t => t.id === $("mB").value);
+  const g = grounds.find(x => x.id === $("mG").value);
+  await addDoc(collection(db, "matches"), {
+    aName: a?.name || "", bName: b?.name || "", groundName: g?.name || "",
+    when: $("mD").value, result: $("mR").value, createdAt: serverTimestamp()
+  });
+  $("mD").value = ""; $("mR").value = ""; await loadAdmin();
+};
+$("addPts").onclick = async () => {
+  const team = $("pT").value.trim(); if (!team) return;
+  await setDoc(doc(db, "points", team), { team, p: +$("pP").value || 0, w: +$("pW").value || 0, l: +$("pL").value || 0, pts: +$("pPts").value || 0 });
+  ["pT", "pP", "pW", "pL", "pPts"].forEach(i => $(i).value = ""); await loadAdmin();
+};
+function renderAdminLists() {
+  $("gList").innerHTML = grounds.map(g => `<div class="msg">${esc(g.name)} – ${esc(g.addr)} <button class="sm" data-dg="${g.id}">🗑</button></div>`).join("");
+  $("cList").innerHTML = coaches.map(c => `<div class="msg">${esc(c.name)} ${esc(c.phone)} <button class="sm" data-dc="${c.id}">🗑</button></div>`).join("");
+  $("adminMatches").innerHTML = matches.map(m => `<div class="msg">${esc(m.aName)} vs ${esc(m.bName)} – ${esc(m.result)} <button class="sm" data-dm="${m.id}">🗑</button></div>`).join("");
+  document.querySelectorAll("[data-dg]").forEach(el => el.onclick = () => delDoc("grounds", el.dataset.dg));
+  document.querySelectorAll("[data-dc]").forEach(el => el.onclick = () => delDoc("coaches", el.dataset.dc));
+  document.querySelectorAll("[data-dm]").forEach(el => el.onclick = () => delDoc("matches", el.dataset.dm));
+  loadCollection("points").then(pts => {
+    $("adminPts").innerHTML = pts.map(d => `<div class="msg">${esc(d.team)} – ${d.pts} pts <button class="sm" data-dp="${d.id}">🗑</button></div>`).join("");
+    document.querySelectorAll("[data-dp]").forEach(el => el.onclick = () => delDoc("points", el.dataset.dp));
+  });
+}
+async function delDoc(c, id) { if (confirm("हटाएं?")) { await deleteDoc(doc(db, c, id)); await loadAdmin(); } }
+
+$("csvBtn").onclick = () => {
+  const rows = [["ID", "नाम", "उम्र", "रोल", "टीम", "मैच", "रन", "गेंदें", "विकेट", "ओवर", "दिए रन", "मोबाइल", "T-Shirt", "स्टेटस"]]
+    .concat(players.map(p => { const pr = privateMap[p.id] || {}; return [pidOf(p.id), p.name, p.age, p.role, p.teamName, p.matches, p.runs, p.balls, p.wkts, p.overs, p.runsGiven, pr.mobile, pr.tshirt, pr.status]; }));
+  const csv = "\ufeff" + rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = "JPL_players.csv"; a.click();
+};
+
+// initial load
+loadAll().then(renderPlayers).then(() => { renderTeams(); renderMatches(); renderCoaches(); renderPoints(); });
+</script>
+</body>
+</html>
